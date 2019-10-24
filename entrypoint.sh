@@ -58,7 +58,13 @@ if [ "${changes_present}" = "true" ]; then
     check_exit_status $? "Failed to set 'fastly_service_config_url' output parameter"
     set_action_output "fastly_service_version_info" "${info}"
     check_exit_status $? "Failed to set 'fastly_service_version_info' output parameter"
-    echo "\nThe 'fastly_service_config_url' and 'fastly_service_version_info' output parameters have been set and are ready to use in later jobs!"
+    set_action_output "fastly_service_id" "${service_id}"
+    check_exit_status $? "Failed to set 'fastly_service_id' output parameter"
+    set_action_output "fastly_active_version" "${active_version}"
+    check_exit_status $? "Failed to set 'fastly_active_version' output parameter"
+    set_action_output "fastly_cloned_version" "${cloned_version}"
+    check_exit_status $? "Failed to set 'fastly_cloned_version' output parameter"
+    echo "\nThe 'fastly_service_config_url', 'fastly_service_version_info', 'fastly_service_id', 'fastly_active_version', and 'fastly_cloned_version' output parameters have been set and are ready to use in later jobs!"
 elif [ "${changes_present}" = "false" ]; then
     echo "No action is required because no Terraform changes are present!"
 else

@@ -26,6 +26,12 @@ outputs:
         description: 'The link to the latest Fastly service version modified by Terraform'
     fastly_service_version_info:
         description: 'Whether Terraform created, cloned, or activated the version'
+    fastly_service_id:
+        description: 'The alphanumeric string identifying a Fastly service'
+    fastly_active_version:
+        description: 'The number of the version activated by Terraform'
+    fastly_cloned_version:
+        description: 'The number of the latest cloned version by Terraform'
 runs:
     using: 'docker'
     image: 'Dockerfile'
