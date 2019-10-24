@@ -1,0 +1,32 @@
+name: 'Fastly Terraform Metadata Action'
+author: 'Fastly'
+description: 'Provides metadata for a Fastly service configuration which is managed by Terraform'
+inputs:
+    tf_action_output_changes_present:
+        description: 'Whether the resulting Terraform plan succeeded with empty diff or non-empty diff'
+        required: true
+    tf_output_service_id:
+        description: 'The name of the Terraform output variable representing the "id" of the Fastly service'
+        required: false
+        default: 'service_id'
+    tf_output_active_version:
+        description: 'The name of the Terraform output variable representing the currently "active_version" of the Fastly service'
+        required: false
+        default: 'active_version'
+    tf_output_cloned_version:
+        description: 'The name of the Terraform output variable representing the latest "cloned_version" of the Fastly service'
+        required: false
+        default: 'cloned_version'
+    tf_state_path:
+        description: 'Path to the Terraform state file'
+        required: false
+        default: 'terraform.tfstate'
+outputs:
+    fastly_service_config_url:
+        description: 'The link to the latest Fastly service version modified by Terraform'
+    fastly_service_version_info:
+        description: 'Whether Terraform created, cloned, or activated the version'
+runs:
+    using: 'docker'
+    image: 'Dockerfile'
+
