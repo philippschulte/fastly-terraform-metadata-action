@@ -1,4 +1,4 @@
-FROM hashicorp/terraform:0.12.12
+FROM hashicorp/terraform:0.12.19
 
 LABEL maintainer="Fastly"
 LABEL repository="http://github.com/philippschulte/fastly-terraform-metadata-action"
