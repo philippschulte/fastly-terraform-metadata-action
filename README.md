@@ -11,6 +11,7 @@ This GitHub Action only works in conjunction with [Terraform GitHub Actions](htt
 | Name                             	| Default           	| Description                                                                                                 	            |
 |----------------------------------	|-------------------	|-------------------------------------------------------------------------------------------------------------------------- |
 | tf_action_output_changes_present 	|                   	| **Required**. Whether the resulting Terraform plan succeeded with empty diff or non-empty diff                            |
+| tf_version                       	|                   	| **Required**. The Terraform version to install and execute. If set to `latest`, the latest stable version will be used.   |
 | tf_output_service_id             	| service_id        	| **Optional**. The name of the Terraform output variable representing the "id" of the Fastly service                       |
 | tf_output_active_version         	| active_version    	| **Optional**. The name of the Terraform output variable representing the currently "active_version" of the Fastly service |
 | tf_output_cloned_version         	| cloned_version    	| **Optional**. The name of the Terraform output variable representing the latest "cloned_version" of the Fastly service    |
@@ -18,36 +19,96 @@ This GitHub Action only works in conjunction with [Terraform GitHub Actions](htt
 
 ## Outputs
 
-| Name                        	| Description                                                         	|
-|-----------------------------	|---------------------------------------------------------------------	|
-| fastly_service_config_url   	| The link to the latest Fastly service version modified by Terraform 	|
-| fastly_service_version_info 	| Whether Terraform created, cloned, or activated the version         	|
+| Name                        	| Description                                                         	                    |
+|-----------------------------	|------------------------------------------------------------------------------------------ |
+| fastly_service_config_url   	| A URL linking to the latest Fastly service version modified by Terraform                  |
+| fastly_service_version_info 	| Human-friendly description of whether Terraform created, cloned, or activated the version |
+| fastly_service_id           	| The alphanumeric string identifying a Fastly service                	                    |
+| fastly_active_version       	| The number of the currently active version of the Fastly service     	                    |
+| fastly_cloned_version       	| The number of the latest modified version by Terraform              	                    |
 
 ## Example
 
-**main.tf**
+**example.tf**
 ```hcl
 provider "fastly" {
-    ...
+  ...
 }
 
 resource "fastly_service_v1" "demo" {
-    ...
+  ...
 }
 
-output "active" {
-    value = fastly_service_v1.demo.active_version
+output "active_version" {
+  value = fastly_service_v1.demo.active_version
 }
 
-output "cloned" {
-    value = fastly_service_v1.demo.cloned_version
+output "cloned_version" {
+  value = fastly_service_v1.demo.cloned_version
 }
 
-output "id" {
-    value = fastly_service_v1.demo.id
+output "service_id" {
+  value = fastly_service_v1.demo.id
 }
 ```
 
-**.github/workflows/main.yml**
-```hcl
+**.github/workflows/example.yml**
+```yml
+name: Action Example
+on:
+  push:
+    branches:
+      - master
+jobs:
+  example:
+    name: Example
+    runs-on: ubuntu-latest
+    env:
+      TF_VAR_FASTLY_EXAMPLE_API_KEY: ${{ secrets.TF_VAR_FASTLY_EXAMPLE_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Terraform Init
+        uses: hashicorp/terraform-github-actions@0.7.1
+        with:
+          tf_actions_version: 0.12.19
+          tf_actions_subcommand: init
+          tf_actions_comment: false
+      - name: Terraform Plan
+        id: plan
+        uses: hashicorp/terraform-github-actions@0.7.1
+        with:
+          tf_actions_version: 0.12.19
+          tf_actions_subcommand: plan
+          tf_actions_comment: false
+          args: -out=example.plan
+      - name: Terraform Apply
+        uses: hashicorp/terraform-github-actions@0.7.1
+        with:
+          tf_actions_version: 0.12.19
+          tf_actions_subcommand: apply
+          tf_actions_comment: false
+          args: example.plan
+      - name: Fastly Service Metadata
+        id: metadata
+        uses: fastly/fastly-terraform-metadata-action@0.2.0
+        with:
+          tf_version: 0.12.19
+          tf_plan_has_changes: ${{ steps.plan.outputs.tf_actions_plan_has_changes }}
+      - name: Slack Notification
+        if: steps.plan.outputs.changes-present == 'true'
+        uses: rtCamp/action-slack-notify@master
+        env:
+          SLACK_CHANNEL: 'example'
+          SLACK_COLOR: '#3278BD'
+          SLACK_ICON: https://github.com/rtCamp.png?size=48
+          SLACK_MESSAGE: ${{ steps.metadata.outputs.fastly_service_config_url }}
+          SLACK_TITLE: ${{ steps.metadata.outputs.fastly_service_version_info }}
+          SLACK_USERNAME: Terraform
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 ```
+
+## Metadata
+
+- Team: Product Engineering
+- Slack: #team-app-eng

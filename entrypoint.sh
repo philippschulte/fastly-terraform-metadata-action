@@ -30,13 +30,58 @@ get_service_config_link()
     echo "https://manage.fastly.com/configure/services/${id}/versions/${version}"
 }
 
-changes_present=$INPUT_TF_ACTION_OUTPUT_CHANGES_PRESENT
+install_terraform()
+{
+    if [ "${terraform_version}" == "latest" ]; then
+        echo "Checking the latest version of Terraform"
+        terraform_version=$(curl -sL https://releases.hashicorp.com/terraform/index.json | jq -r '.versions[].version' | grep -v '[-].*' | sort -rV | head -n 1)
+        if [ -z "${terraform_version}" ]; then
+            return 1
+        fi
+    fi
+
+    echo "Downloading Terraform v${terraform_version}"
+    url="https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
+    curl -s -S -L -o /tmp/terraform_${terraform_version} ${url}
+    if [ "${?}" -ne 0 ]; then
+        return 2
+    fi
+    echo "Successfully downloaded Terraform v${terraform_version}"
+
+    echo "Unzipping Terraform v${terraform_version}"
+    unzip -d /usr/local/bin /tmp/terraform_${terraform_version} &> /dev/null
+    if [ "${?}" -ne 0 ]; then
+        return 3
+    fi
+    echo "Successfully unzipped Terraform v${terraform_version}"
+}
+
+changes_present=$INPUT_TF_PLAN_HAS_CHANGES
 if [ -z "${changes_present}" ]; then
-    echo "ERROR # 1 : Missing TF_ACTION_OUTPUT_CHANGES_PRESENT environment variable"
+    echo "ERROR # 1 : Input tf_plan_has_changes cannot be empty"
+    exit 1
+fi
+
+terraform_version=$INPUT_TF_VERSION
+if [ -z "${terraform_version}" ]; then
+    echo "ERROR # 1 : Input tf_version cannot be empty"
     exit 1
 fi
 
 if [ "${changes_present}" = "true" ]; then
+    install_terraform
+    INSTALL_TERRAFORM_RETURN_CODE=$?
+    if [ "$INSTALL_TERRAFORM_RETURN_CODE" -eq "1" ]; then
+        echo "ERROR # 1 : Failed to fetch the latest version"
+        exit 1
+    elif [ "$INSTALL_TERRAFORM_RETURN_CODE" -eq "2" ]; then
+        echo "ERROR # 2 : Failed to download Terraform v${terraform_version}"
+        exit 2
+    elif [ "$INSTALL_TERRAFORM_RETURN_CODE" -eq "3" ]; then
+        echo "ERROR # 3 : Failed to unzip Terraform v${terraform_version}"
+        exit 3
+    fi
+  
     service_id=$( sh -c "TF_IN_AUTOMATION=true terraform output -no-color -state=${INPUT_TF_STATE_PATH} ${INPUT_TF_OUTPUT_SERVICE_ID}" 2> /dev/null )
     check_exit_status $? "Failed to extract the value of the '${INPUT_TF_OUTPUT_SERVICE_ID}' output variable from the Terraform state file"
     active_version=$( sh -c "TF_IN_AUTOMATION=true terraform output -no-color -state=${INPUT_TF_STATE_PATH} ${INPUT_TF_OUTPUT_ACTIVE_VERSION}" 2> /dev/null )
@@ -64,11 +109,10 @@ if [ "${changes_present}" = "true" ]; then
     check_exit_status $? "Failed to set 'fastly_active_version' output parameter"
     set_action_output "fastly_cloned_version" "${cloned_version}"
     check_exit_status $? "Failed to set 'fastly_cloned_version' output parameter"
-    echo "\nThe 'fastly_service_config_url', 'fastly_service_version_info', 'fastly_service_id', 'fastly_active_version', and 'fastly_cloned_version' output parameters have been set and are ready to use in later jobs!"
+    echo "\nThe 'fastly_service_config_url', 'fastly_service_version_info', 'fastly_service_id', 'fastly_active_version', and 'fastly_cloned_version' output parameters have been set and are ready to use in later steps!"
 elif [ "${changes_present}" = "false" ]; then
     echo "No action is required because no Terraform changes are present!"
 else
-    echo "ERROR # 1 : The TF_ACTION_OUTPUT_CHANGES_PRESENT environment variable must be a boolean ('true' or 'false')"
+    echo "ERROR # 1 : Input tf_plan_has_changes must be a boolean ('true' or 'false')"
     exit 1
 fi
-

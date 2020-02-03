@@ -2,8 +2,11 @@ name: 'Fastly Terraform Metadata Action'
 author: 'Fastly'
 description: 'Provides metadata for a Fastly service configuration which is managed by Terraform'
 inputs:
-    tf_action_output_changes_present:
+    tf_plan_has_changes:
         description: 'Whether the resulting Terraform plan succeeded with empty diff or non-empty diff'
+        required: true
+    tf_version:
+        description: 'The Terraform version to install'
         required: true
     tf_output_service_id:
         description: 'The name of the Terraform output variable representing the "id" of the Fastly service'
@@ -35,4 +38,3 @@ outputs:
 runs:
     using: 'docker'
     image: 'Dockerfile'
-
