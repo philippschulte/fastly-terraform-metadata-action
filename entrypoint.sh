@@ -14,10 +14,12 @@ set_action_output()
 {
     name=$1
     value=$2
+    echo "Setting '${name}' output parameter"
     if [ -z "${name}" ] || [ -z "${value}" ]; then
         return 1
     fi
     echo "::set-output name=${name}::${value}"
+    echo "Successfully set '${name}' output parameter to '${value}'"
 }
 
 get_service_config_link()
@@ -109,7 +111,6 @@ if [ "${changes_present}" = "true" ]; then
     check_exit_status $? "Failed to set 'fastly_active_version' output parameter"
     set_action_output "fastly_cloned_version" "${cloned_version}"
     check_exit_status $? "Failed to set 'fastly_cloned_version' output parameter"
-    echo "\nThe 'fastly_service_config_url', 'fastly_service_version_info', 'fastly_service_id', 'fastly_active_version', and 'fastly_cloned_version' output parameters have been set and are ready to use in later steps!"
 elif [ "${changes_present}" = "false" ]; then
     echo "No action is required because no Terraform changes are present!"
 else
