@@ -1,12 +1,12 @@
 name: 'Fastly Terraform Metadata Action'
 author: 'Fastly'
-description: 'Provides metadata for a Fastly service configuration which is managed by Terraform'
+description: 'Provides metadata of a Fastly service configuration which is managed by Terraform'
 inputs:
     tf_plan_has_changes:
-        description: 'Whether the resulting Terraform plan succeeded with empty diff or non-empty diff'
+        description: 'The output of the Terraform GitHub plan action'
         required: true
-    tf_version:
-        description: 'The Terraform version to install'
+    tf_output_json_string:
+        description: 'The output of the Terraform GitHub output action'
         required: true
     tf_output_service_id:
         description: 'The name of the Terraform output variable representing the "id" of the Fastly service'
@@ -20,21 +20,17 @@ inputs:
         description: 'The name of the Terraform output variable representing the latest "cloned_version" of the Fastly service'
         required: false
         default: 'cloned_version'
-    tf_state_path:
-        description: 'Path to the Terraform state file'
-        required: false
-        default: 'terraform.tfstate'
 outputs:
     fastly_service_config_url:
-        description: 'The link to the latest Fastly service version modified by Terraform'
+        description: 'The URL to the latest Fastly service version modified by Terraform'
     fastly_service_version_info:
-        description: 'Whether Terraform created, cloned, or activated the version'
+        description: 'Whether Terraform created, cloned, or activated the service version'
     fastly_service_id:
         description: 'The alphanumeric string identifying a Fastly service'
     fastly_active_version:
         description: 'The number of the version activated by Terraform'
     fastly_cloned_version:
-        description: 'The number of the latest cloned version by Terraform'
+        description: 'The number of the version cloned by Terraform'
 runs:
     using: 'docker'
     image: 'Dockerfile'
